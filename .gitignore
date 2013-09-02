@@ -1,0 +1,8 @@
+.idea
+lib/*.iced
+lib/*.map
+src/*.js
+src/*.map
+test/*.js
+test/*.map
+node_modules

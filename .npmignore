@@ -1,0 +1,8 @@
+lib/*.map
+lib/*.iced
+src/*.map
+src/*.js
+node_modules
+.gitignore
+test/*.js
+test/*.map
