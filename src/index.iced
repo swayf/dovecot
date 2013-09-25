@@ -1,76 +1,112 @@
-Nodemailer = require("nodemailer")
-
+Nodemailer = require 'nodemailer'
+assert = require('assert')
 
 class Mailer
 
-  defaults:
-    type: 'SMTP'
-    transport: {}
+    defaults:
+        type: 'SMTP'
+        transport: {}
 
-    mail:
-      onFailure:
-        retries: 5
-        minTimeout: 2 * 1000
-        maxTimeout: 5 * 60 * 1000
-        factor: 2
-        randomize: true
+        views:  {}
 
-      template:
-        filename: ''
-        context: {}
-        options: {}
+        mail:
+            onFailure:
+                retries: 5
+                minTimeout: 2 * 1000
+                maxTimeout: 5 * 60 * 1000
+                factor: 2
+                randomize: true
 
-      options: {}
+            template:
+                filename: ''
+                context: {}
+                options: {}
 
-
-  constructor: (plugin, options) ->
-    @plugin = plugin
-    @Hapi = plugin.hapi
-    @Utils = @Hapi.utils
-    @Boom = @Hapi.error
-    @log = plugin.log
-    @settings = @Utils.applyToDefaults(@defaults, options)
-    @mailTransport = Nodemailer.createTransport(@settings.type, @settings.transport)
+            fields: {}
 
 
-  sendEmail: (request, mailOptions, next) =>
+    constructor: (@plugin, options) ->
 
-    mailSettings = @Utils.applyToDefaults(@settings.mail, mailOptions)
+        assert @plugin and @plugin.hapi, 'Invalid plugin argument'
+        @plugin.hapi.utils.assert @constructor is Mailer, 'Scheme must be instantiated using new'
 
-    # if template is definded, lets render html email
-    if mailSettings.template.filename
-      # TODO: write test for html-email rendering
-      # TODO: add async render support??
-      mailSettings.options.html = request.server._views.render  mailSettings.template.filename,
-                                                                mailSettings.template.context,
-                                                                mailSettings.template.options
-    errors = []
-    try_number = 0
-    error = ''
+        @Hapi = plugin.hapi
+        @Utils = @Hapi.utils
+        @Boom = @Hapi.error
+        @log = plugin.log
+        @settings = @Utils.applyToDefaults(@defaults, options)
 
-    while error? and try_number <= mailSettings.onFailure.retries
-      try_number++
-      await @mailTransport.sendMail mailSettings.options, defer error, responseStatus
-      if error
-        errors.push error
-        if try_number <= mailSettings.onFailure.retries
-          timeout = mailSettings.onFailure.minTimeout * Math.pow mailSettings.onFailure.factor, try_number
-          timeout *= (1 + Math.random()) if mailSettings.onFailure.randomize
-          await setTimeout defer(), timeout
+        @mailTransport = Nodemailer.createTransport(@settings.type, @settings.transport)
 
-    if error
-      @log ['email', 'plugin', 'error'], errors
-      result = @Boom.internal error, errors
-    else
-      result = responseStatus
+        if not @_is_empty @settings.views
+            @plugin.views @settings.views
 
-    next result if next
 
+    sendEmail: (request, mailOptions, next) =>
+
+        mailSettings = @Utils.applyToDefaults(@settings.mail, mailOptions)
+
+        # if template is definded, lets render html email
+        if mailSettings.template?.filename
+            view_manager = request.server.pack._env?.dovecot?.views || request.server._views
+            await view_manager.render mailSettings.template.filename,
+                mailSettings.template.context,
+                mailSettings.template.options,
+                defer err, rendered, settings
+
+            if err
+                next err
+
+            mailSettings.fields.html = rendered
+
+        errors = []
+        try_number = 0
+        error = ''
+
+        while error? and try_number <= mailSettings.onFailure.retries
+            try_number++
+            await @mailTransport.sendMail mailSettings.fields, defer error, responseStatus
+            if error
+                errors.push error
+                if try_number <= mailSettings.onFailure.retries
+                    timeout = mailSettings.onFailure.minTimeout * Math.pow mailSettings.onFailure.factor, try_number
+                    timeout *= (1 + Math.random()) if mailSettings.onFailure.randomize
+                    await setTimeout defer(), timeout
+
+        if error
+            @log ['email', 'plugin', 'error'], errors
+            result = @Boom.internal error, errors
+        else
+            result = responseStatus
+
+        next result if next
+
+
+    _is_empty: (obj) ->
+        if not obj? or obj.length is 0
+            return true
+
+        if obj.length? and obj.length > 0
+            return false
+
+        for key of obj
+            if Object.prototype.hasOwnProperty.call(obj,key)
+                return false
+
+        return true
 
 
 exports.register = (plugin, options, next) ->
 
-  exports.mailer = new Mailer plugin, options
-  plugin.api "sendEmail", exports.mailer.sendEmail
+    createEmailer = (local_options) ->
+        new Mailer plugin, plugin.hapi.utils.applyToDefaults options, local_options
 
-  next()
+    default_mailer = new Mailer plugin, options
+
+    if process.env.NODE_ENV == 'test'
+        exports.mailer = default_mailer
+
+    plugin.api 'createEmailer', createEmailer
+    plugin.api 'sendEmail',    default_mailer.sendEmail
+
+    next()
