@@ -13,14 +13,14 @@
   "author": "Oleg Butovich <obutovich@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "nodemailer": "~0.5.2"
+    "nodemailer": "~0.x.x"
   },
   "devDependencies": {
-    "lab": "~0.2.0",
-    "iced-coffee-script": "~1.6.3-f",
-    "hapi": "~1.9.6",
-    "sinon": "~1.7.3",
-    "jade": "~0.35.0",
-    "ect": "~0.5.2"
+    "lab": "~0.x.x",
+    "iced-coffee-script": "~1.x.x",
+    "hapi": "~1.x.x",
+    "sinon": "~1.x.x",
+    "jade": "~0.x.x",
+    "ect": "~0.x.x"
   }
 }
