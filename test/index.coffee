@@ -150,3 +150,4 @@ describe 'dovecot', ->
             expect(sentMail.html).to.equal '<h1>test</h1><p>example.com/?token=1234abcd</p>'
             expect(sentMail.to).to.equal 'test3@test.com'
             done()
+

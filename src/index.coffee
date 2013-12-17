@@ -1,5 +1,5 @@
 Nodemailer = require 'nodemailer'
-assert = require('assert')
+assert = require 'assert'
 
 class Mailer
 
@@ -34,12 +34,9 @@ class Mailer
         @Utils = @Hapi.utils
         @Boom = @Hapi.error
         @log = plugin.log
-        @settings = @Utils.applyToDefaults(@defaults, options)
+        @settings = @Utils.applyToDefaults @defaults, options
 
-        @mailTransport = Nodemailer.createTransport(@settings.type, @settings.transport)
-
-        if not @_is_empty @settings.views
-            @plugin.views @settings.views
+        @mailTransport = Nodemailer.createTransport @settings.type, @settings.transport
 
 
     sendEmail: (request, mailOptions, next) =>
@@ -55,7 +52,8 @@ class Mailer
                 defer err, rendered, settings
 
             if err
-                next err
+                @log ['email', 'plugin', 'error'], err
+                return next err
 
             mailSettings.fields.html = rendered
 
@@ -79,34 +77,42 @@ class Mailer
         else
             result = responseStatus
 
-        next result if next
+        next result
 
 
-    _is_empty: (obj) ->
-        if not obj? or obj.length is 0
-            return true
 
-        if obj.length? and obj.length > 0
-            return false
-
-        for key of obj
-            if Object.prototype.hasOwnProperty.call(obj,key)
-                return false
-
+is_empty = (obj) ->
+    if not obj? or obj.length is 0
         return true
+
+    if obj.length? and obj.length > 0
+        return false
+
+    for own key of obj
+        return false
+
+    return true
 
 
 exports.register = (plugin, options, next) ->
 
+    view_initialized = false
+    if not is_empty options.views
+        plugin.views options.views
+        view_initialized = true
+
     createEmailer = (local_options) ->
-        new Mailer plugin, plugin.hapi.utils.applyToDefaults options, local_options
+        merged_options = plugin.hapi.utils.applyToDefaults options, local_options
+        if not view_initialized
+            plugin.views merged_options.views
+        new Mailer plugin, merged_options
 
     default_mailer = new Mailer plugin, options
 
     if process.env.NODE_ENV == 'test'
         exports.mailer = default_mailer
 
-    plugin.api 'createEmailer', createEmailer
-    plugin.api 'sendEmail',    default_mailer.sendEmail
+    plugin.expose 'createEmailer', createEmailer
+    plugin.expose 'sendEmail',    default_mailer.sendEmail
 
     next()
