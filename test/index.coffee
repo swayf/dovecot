@@ -31,7 +31,7 @@ describe 'dovecot', ->
     requestStub = {}
     sendEmailStub = null
 
-    it 'register plugin', (done) ->
+    it 'should register plugin', (done) ->
 
         class EctWrapper
             constructor: (@ect) ->
@@ -58,7 +58,7 @@ describe 'dovecot', ->
             done()
 
 
-    it 'dovecot simple sendEmail', (done) ->
+    it 'should send simple sendEmail', (done) ->
         mail =
             fields:
                 to: 'test@test.com'
@@ -70,7 +70,7 @@ describe 'dovecot', ->
             done()
 
 
-    it 'dovecot sendEmail with retry', (done) ->
+    it 'should sendEmail with retry', (done) ->
         mail2 =
             fields:
                 to: 'test2@test.com'
@@ -92,7 +92,7 @@ describe 'dovecot', ->
             done()
 
 
-    it 'send email with jade template generation', (done) ->
+    it 'should send email with jade template generation', (done) ->
 
         sendEmailStub.callsArgWithAsync 1, null, 'ok'
 
@@ -110,10 +110,10 @@ describe 'dovecot', ->
         server.route
             method: 'GET'
             path: '/'
-            handler: (request) ->
+            handler: (request, reply) ->
                 server.plugins.dovecot.sendEmail request, mail, (result) ->
                     expect(result).to.equal 'ok'
-                    request.reply()
+                    reply()
 
         server.inject '/', (res) ->
             sentMail = sendEmailStub.lastCall.args[0]
@@ -122,7 +122,7 @@ describe 'dovecot', ->
             done()
 
 
-    it 'send email with ect template generation', (done) ->
+    it 'should send email with ect template generation', (done) ->
 
         sendEmailStub.callsArgWithAsync 1, null, 'ok'
 
@@ -140,10 +140,10 @@ describe 'dovecot', ->
         server.route
             method: 'GET'
             path: '/test'
-            handler: (request) ->
+            handler: (request, reply) ->
                 server.plugins.dovecot.sendEmail request, mail, (result) ->
                     expect(result).to.equal 'ok'
-                    request.reply()
+                    reply()
 
         server.inject '/test', (res) ->
             sentMail = sendEmailStub.lastCall.args[0]

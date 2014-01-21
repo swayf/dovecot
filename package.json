@@ -1,6 +1,6 @@
 {
   "name": "dovecot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "hapi wrapper for nodemailer",
   "keywords": [
     "hapi",
@@ -13,14 +13,14 @@
   "author": "Oleg Butovich <obutovich@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "nodemailer": "~0.x.x"
+    "nodemailer": "0.x.x"
   },
   "devDependencies": {
-    "lab": "~0.x.x",
-    "iced-coffee-script": "~1.x.x",
-    "hapi": "~1.x.x",
-    "sinon": "~1.x.x",
-    "jade": "~0.x.x",
-    "ect": "~0.x.x"
+    "lab": "1.x.x",
+    "iced-coffee-script": "1.x.x",
+    "hapi": "2.x.x",
+    "sinon": "1.x.x",
+    "jade": "1.x.x",
+    "ect": "0.x.x"
   }
 }
