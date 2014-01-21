@@ -6,3 +6,5 @@ src/*.map
 test/*.js
 test/*.map
 node_modules
+.coffeehintrc
+.jshintrc
